@@ -1,0 +1,201 @@
+pico-8 cartridge // http://www.pico-8.com
+version 35
+__lua__
+
+--networking
+--https://www.lexaloffle.com/bbs/?tid=3909
+
+--audio
+--https://www.lexaloffle.com/dl/docs/pico-8_manual.html#Appendix_A
+
+--[[
+when you export, it will overwite your HTML, so be ready to copy/paste that
+--]]
+
+my_val = 0
+my_id = 0
+
+can_press = true
+
+outgoing_pin = 100
+my_id_pin = 101
+
+frogs = {}
+num_frogs = 10
+
+growth_rate = 1
+decay_rate = 1
+max_val = 100
+
+function _init()
+	printh("hello")
+
+    --setting my id for testing
+    --this should start at -1 or something and wait to be set by the javascript
+    poke(0x5f80+my_id_pin, 99);  
+
+    --setting these values persists between runs
+    print(peek(0x5f80+2))   --print value of slot 2
+    poke(0x5f80, 5);        --set the value of slot 0 to 5
+    poke(0x5f80+2, 6);      --set the value of slot 2 to 6
+    print(peek(0x5f80+2))
+
+    print(peek(0x5f80+99))
+    poke(0x5f80+99, 7);
+
+    --start all frog pins at 200
+    for i=1,num_frogs do
+        poke(0x5f80+i, 200); 
+    end
+
+
+    --init frogs
+    for i=1,num_frogs do
+        frogs[i] = {
+            x = 0,
+            y = 0,
+            remote_val = 0,
+            val = 0,
+            is_active = false,
+            is_local = false
+        }
+    end
+
+end
+
+function _update()
+    --print(peek(0x5f80+2))
+
+    --check the button
+    if btn(5) and can_press then
+        my_val += growth_rate
+        poke(0x5f80+outgoing_pin, 1);
+    else
+        my_val -= decay_rate
+        can_press = false
+        poke(0x5f80+outgoing_pin, 0);
+    end
+
+    if my_val < 0 then
+        my_val = 0
+        can_press = true
+    end
+    if my_val > max_val then
+        my_val = max_val
+    end
+
+    --set the local frog (this really only needs to happen once)
+    my_id = peek(0x5f80+my_id_pin)
+    if my_id > 0 and my_id <= num_frogs then
+        frogs[my_id].is_local = true
+    end
+
+    --grab the values from the pins
+    for i=1,num_frogs do
+        local val = peek(0x5f80+i)
+        frogs[i].remote_val = val
+    end
+
+
+
+    --update frogs
+    for frog in all (frogs) do
+
+        
+        
+        --is it time to drop the value?
+        if frog.remote_val == 0 then
+            frog.val -= decay_rate
+            if frog.val < 0 then frog.val = 0 end
+        elseif frog.is_active then
+            frog.val = frog.remote_val  --you could lerp this to make it look nicer
+        else
+            frog.val = 0
+        end
+
+        --if this is the local frog, set the values
+        if frog.is_local then
+            frog.remote_val = my_val
+            frog.val = my_val
+        end
+
+        --if the val is in range, then this frog is active
+        frog.is_active = frog.remote_val <= max_val
+
+        
+
+        
+
+    end
+
+
+    
+
+    --store it!
+    --poke(0x5f80+0, my_val);
+
+    
+    
+
+    
+end
+
+function _draw()
+    cls(0)
+    debug_draw()
+
+    spr(1, 50,50, 4,3 )
+end
+
+function debug_draw()
+    left_x = 2
+    mid_x = 30
+    text_h = 6
+    cur_col = 1
+    
+    print(my_val, left_x, cur_col * text_h, 7)
+    cur_col += 1
+    print("- - -", left_x, cur_col * text_h)
+    cur_col += 1
+    for i=1,num_frogs do 
+        local frog = frogs[i]
+        color = 7
+        if (frog.is_active == false)    color = 5
+        raw_text = i..":"..frog.remote_val
+        if frog.is_local then
+            raw_text = "♥:"..my_val
+        end
+        print(raw_text, left_x, text_h * cur_col, color)
+        print(frog.val, mid_x, text_h * cur_col )
+        cur_col += 1
+    end
+    print("- - -", left_x, cur_col * text_h, 7)
+    cur_col += 1
+    for i=100,105 do
+        print(i..":"..peek(0x5f80+i), left_x, cur_col * text_h)
+        cur_col += 1
+    end
+end
+
+function play_sound()
+    --(x) effect 1, 3 sounds pretty froggy
+        --5 is a little froggy
+    --(v) volume maxes out at 7
+    --(i) instruments: 0,1,2,3, 5,7
+    --(s) speed  can go up to 9. higher = slower
+    if btnp(4) then
+        --?"\ace-g"
+        ?"\as9v7x3i0f..d-..f"
+        --?"\as4x5c1eg2egc3egc4"
+        --?"\ab"
+    end
+end
+
+
+__gfx__
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
