@@ -24,7 +24,7 @@ outgoing_pin = 100
 my_id_pin = 101
 
 frogs = {}
-num_frogs = 10
+num_frogs = 20
 
 --TODO: sort frogs by Y so sprites are drawn on top of each other right
 positions = {}
@@ -145,55 +145,7 @@ function _update()
     
 end
 
-function generate_placement()
-    srand(10)   --selected this number because it looked nice
 
-    placements = {}
-
-    for i=1,20 do
-
-        --generate choices
-        local choices = {}
-        for j=1,num_position_choices do
-            choices[j] = {
-                x = position_padding + rnd(128-position_padding*2),
-                y = position_padding + rnd(128-position_padding*2),
-                min_dist = 999
-            }
-        end
-
-        --compare to current placements
-        for k=1,i-1 do
-            printh(i.." against "..k)
-            for j=1,num_position_choices do
-                -- printh(" choices "..choices[j].x)
-                -- printh(" positions "..positions[k].x)
-                --local dist = approx_dist(choices[j].x-positions[k].x, choices[j].y-positions[k].y)
-                
-                local dist = max(abs(choices[j].x-positions[k].x), abs(choices[j].y-positions[k].y))
-
-                printh("   dist "..dist)
-                
-                if choices[j].min_dist > dist then
-                    choices[j].min_dist = dist
-                    printh("    set to "..choices[j].min_dist)
-                end
-            end
-        end
-
-        local best_choice = choices[1]
-        printh("starting best: "..best_choice.min_dist)
-        for j=2,num_position_choices do
-            printh("  comapre "..choices[j].min_dist)
-            if best_choice.min_dist < choices[j].min_dist then
-                best_choice = choices[j]
-            end
-            printh(" best: "..best_choice.min_dist)
-        end
-
-        positions[i] = best_choice
-    end
-end
 
 function _draw()
     cls(0)
@@ -208,7 +160,7 @@ function _draw()
     -- sspr(8,0, 32,24, 50,60, 32*sprite_scale, 24*sprite_scale)
 
     srand(1)
-    for i=1,20 do
+    for i=1,num_frogs do
         
         local sprite_scale = 1-- + rnd(1)
         local flip = rnd() > 0.5
@@ -226,7 +178,9 @@ end
 
 function debug_draw()
     left_x = 2
-    mid_x = 30
+    mid_dist = 30
+    left_x2 = left_x + mid_dist + 20
+    --mid_x2 = left_x2+30
     text_h = 6
     cur_col = 1
     
@@ -235,6 +189,8 @@ function debug_draw()
     print("- - -", left_x, cur_col * text_h)
     cur_col += 1
     for i=1,num_frogs do 
+        x_pos = left_x
+        if(i>10)    x_pos = left_x2
         local frog = frogs[i]
         color = 7
         if (frog.is_active == false)    color = 5
@@ -242,9 +198,10 @@ function debug_draw()
         if frog.is_local then
             raw_text = "♥:"..my_val
         end
-        print(raw_text, left_x, text_h * cur_col, color)
-        print(frog.val, mid_x, text_h * cur_col )
+        print(raw_text, x_pos, text_h * cur_col, color)
+        print(frog.val, x_pos+mid_dist, text_h * cur_col )
         cur_col += 1
+        if (i==10)  cur_col = 3
     end
     print("- - -", left_x, cur_col * text_h, 7)
     cur_col += 1
@@ -268,15 +225,50 @@ function play_sound()
     end
 end
 
---https://www.lexaloffle.com/bbs/?tid=36059
-function approx_dist(dx,dy)
-    local maskx,masky=dx>>31,dy>>31
-    local a0,b0=(dx+maskx)^^maskx,(dy+masky)^^masky
-    if a0>b0 then
-     return a0*0.9609+b0*0.3984
+--
+-- Generate Placement
+-- Creates a list of placements somewhat spaced out from eahc other
+--
+function generate_placement()
+    srand(10)   --selected this number because it looked nice
+
+    placements = {}
+
+    for i=1,num_frogs do
+
+        --generate choices
+        local choices = {}
+        for j=1,num_position_choices do
+            choices[j] = {
+                x = position_padding + rnd(128-position_padding*2),
+                y = position_padding + rnd(128-position_padding*2),
+                min_dist = 999
+            }
+        end
+
+        --compare to current placements
+        for k=1,i-1 do
+            printh(i.." against "..k)
+            for j=1,num_position_choices do
+                local dist = max(abs(choices[j].x-positions[k].x), abs(choices[j].y-positions[k].y))
+                if choices[j].min_dist > dist then
+                    choices[j].min_dist = dist
+                    printh("    set to "..choices[j].min_dist)
+                end
+            end
+        end
+
+        local best_choice = choices[1]
+        --printh("starting best: "..best_choice.min_dist)
+        for j=2,num_position_choices do
+            if best_choice.min_dist < choices[j].min_dist then
+                best_choice = choices[j]
+            end
+        end
+
+        positions[i] = best_choice
     end
-    return b0*0.9609+a0*0.3984
-   end
+end
 
 __gfx__
 00000000000000000000000000000000000000000000000000770000077000000000000000000000000000000000000000000000000000000000000000000000
