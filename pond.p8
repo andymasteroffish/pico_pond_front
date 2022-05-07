@@ -59,13 +59,17 @@ function _init()
         poke(0x5f80+i, 200); 
     end
 
-    --define some selecitons
+    --define some selections
     instruments = {0, 1, 2, 3, 5, 7}
     notes = {'a', 'b', 'c', 'd', 'e', 'f', 'g'}
 
+    main_colors = {12, 11,  8, 10, 13}
+    dark_colors = {1,  131, 2, 9,  5}
+    
     --init frogs
     srand(0)
     for i=1,num_frogs do
+        local col_id = 1 + flr(rnd(#main_colors))
         frogs[i] = {
             --x = positions[i].x,
             --y = positions[i].y,
@@ -73,8 +77,8 @@ function _init()
             val = 0,
             is_active = false,
             is_local = false,
-            col_a = 8+rnd(5),
-            col_b = 8+rnd(5),
+            col_a = main_colors[col_id],
+            col_b = dark_colors[col_id],
             flip = rnd() > 0.5,
             can_ribbit = false,
             instrument = instruments[i%6 +1]
