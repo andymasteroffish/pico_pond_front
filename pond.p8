@@ -2,45 +2,53 @@ pico-8 cartridge // http://www.pico-8.com
 version 35
 __lua__
 
---networking
+--Demake by Andy Wallace
+
+--Frog Chorus by v buckenham & Viviane Schwarz
+--https://frogchorus.com/?pond=the_big_pond
+
+--super helpful networking info by seleb
 --https://www.lexaloffle.com/bbs/?tid=3909
 
---audio
+--audio generation documentation
 --https://www.lexaloffle.com/dl/docs/pico-8_manual.html#Appendix_A
 
---frog pic
+--frog pic by scofanogd
 --https://opengameart.org/content/pixel-frog-0
 
---[[
-when you export, it will overwite your HTML, so be ready to copy/paste that
---]]
 
+--player input values
 my_val = 0
 my_id = 0
-
 can_press = true
 
+--keeping track of our lovely frogs
+frogs = {}
+num_frogs = 20
+
+--generating positions
+positions = {}
+position_padding = 10
+num_position_choices = 4    --generate this many and select the "best" for each frog
+
+--having the values rise and fall
+growth_rate = 1.2
+decay_rate = 3
+max_val = 100
+
+--pin numbers for communicating with JS
 outgoing_pin = 100
 my_id_pin = 101
 cart_start_pin = 102    --to tell the js app we've started
 status_pin = 103
 
-frogs = {}
-num_frogs = 20
-
-positions = {}
-position_padding = 10
-num_position_choices = 4    --generate this many and select the "best" for each frog
-
-growth_rate = 1.2
-decay_rate = 3
-max_val = 100
-
 --debug stuff
 show_debug = false
 
+--
+-- Setup
+--
 function _init()
-	printh("hello")
 
     --setting my id for testing
     --this should start at 99 or something and wait to be set by the javascript
@@ -49,24 +57,18 @@ function _init()
     --start the status as "connecting"
     poke(0x5f80+status_pin, 1)
 
-    --setting these values persists between runs
-    -- print(peek(0x5f80+2))   --print value of slot 2
-    -- poke(0x5f80, 5);        --set the value of slot 0 to 5
-    -- poke(0x5f80+2, 6);      --set the value of slot 2 to 6
-    -- print(peek(0x5f80+2))
-
-    -- print(peek(0x5f80+99))
-    -- poke(0x5f80+99, 7);
-
     --start all frog pins at 200 to mark them as not used
     for i=1,num_frogs do
         poke(0x5f80+i, 200); 
     end
 
-    --make the backgorund and store it in sprite sheet
+    --make the background and store it in sprite sheet
     create_background()
 
-    --define some selections
+    --make sure all instances get the same frogs by seeding random
+    srand(1)
+
+    --define some selections to use when making frogs
     instruments = {0, 1, 2, 3, 5, 7}
     notes = {'a', 'b', 'c', 'd', 'e', 'f', 'g'}
 
@@ -74,12 +76,9 @@ function _init()
     dark_colors = {4,  3,   2, 9}
     
     --init frogs
-    srand(1)
     for i=1,num_frogs do
         local col_id = 1 + flr(rnd(#main_colors))
         frogs[i] = {
-            --x = positions[i].x,
-            --y = positions[i].y,
             remote_val = 0,
             val = 0,
             is_active = false,
@@ -92,17 +91,17 @@ function _init()
         }
 
         --audio stuff
-        --effect (I like effect 3 a bit better)
+        --random effect (I like effect 3 a bit better)
         if rnd() < 0.25 then
             frogs[i].effect = 1
         else
             frogs[i].effect = 3
         end
 
+        --generate 2 notes for the frog to use
         local high_note_id = flr(3 + rnd()*4)
         frogs[i].high_note = notes[high_note_id]
         frogs[i].low_note = notes[high_note_id-2]
-        --printh('high: '..frogs[i].high_note.."  low: "..frogs[i].low_note)
     end
 
     --generate the positions of the frogs
@@ -113,8 +112,10 @@ function _init()
 
 end
 
+--
+-- Update
+--
 function _update()
-    --print(peek(0x5f80+2))
 
     --check the button
     local holding = btn(5) or btn(4)
@@ -127,9 +128,10 @@ function _update()
         poke(0x5f80+outgoing_pin, 0);
     end
 
+    --keep the value in range
     if my_val < 0 then
         my_val = 0
-        can_press = true
+        can_press = true    --only let them press again once the button hits 0
     end
     if my_val > max_val then
         my_val = max_val
@@ -151,21 +153,20 @@ function _update()
 
     --update frogs
     for frog in all (frogs) do
-
-
         --is it time to drop the value?
         if frog.remote_val == 0 then
-            
+            --play the sound if te value just started dropping
             if frog.val > 0 and frog.is_local == false and frog.can_ribbit then
                 frog.can_ribbit = false
                 play_sound(frog)
             end
-
             --reduce the value
             frog.val -= decay_rate
             if frog.val < 0 then frog.val = 0 end
+        --if it is positive, grab the remote value
         elseif frog.is_active then
-            frog.val = frog.remote_val  --you could lerp this to make it look nicer
+            frog.val = frog.remote_val 
+        --if the frog is inactive keep it at 0
         else
             frog.val = 0
         end
@@ -175,25 +176,24 @@ function _update()
             frog.remote_val = my_val
             frog.val = my_val
 
-            --did they just lift up?
+            --if they just lifted up on the button, play the sound
             if peek(0x5f80+outgoing_pin) == 0 and frog.val > 1 and frog.can_ribbit then
                 frog.can_ribbit = false
                 play_sound(frog)
             end
         end
 
-         --only let frogs ribbit again once they've gone to 0
+         --only let frogs ribbit again once they've gone back to 0
          if frog.val < 1 then
              frog.can_ribbit = true
          end
 
         --if the val is in range, then this frog is active
         frog.is_active = frog.remote_val <= max_val
-
     end
 
 
-    --debug
+    --debug stuff. uncomment if needed. Left and right will crash the game if you go out of range
     -- if (btnp(2)) show_debug = not show_debug
     -- if (btnp(0)) frogs[my_id].is_local=false, poke(0x5f80+my_id_pin, my_id-1)
     -- if (btnp(1)) frogs[my_id].is_local=false, poke(0x5f80+my_id_pin, my_id+1)
@@ -201,7 +201,9 @@ function _update()
 end
 
 
-
+--
+-- Draw
+--
 function _draw()
     cls(0)
 
@@ -230,6 +232,9 @@ function _draw()
     if(show_debug)  debug_draw()
 end
 
+--
+-- Status text
+--
 function draw_status()
     local status = peek(0x5f80+status_pin)
     --1: connecting
@@ -252,6 +257,9 @@ function draw_status()
     end
 end
 
+--
+-- Draws centered white text with blakc outline
+--
 function outline_text(text, y)
     --center x
     x = 64 - (#text) * 2
@@ -265,7 +273,9 @@ function outline_text(text, y)
     print(text,x,y,7)
 end
 
+--
 --used to get the cover picture for Itch
+--
 function draw_title()
     local frog = frogs[3]
     outline_text("pico pond", 50)
@@ -276,7 +286,9 @@ function draw_title()
     sspr(0,0, base_w,base_h, 64-base_w/2,60, base_w, base_h, false, false)
 end
 
+--
 --makes a pattern for the background and writes it to the sprite sheet
+--
 function create_background()
     cls()
 
@@ -300,6 +312,9 @@ function create_background()
     memcpy(0,sprite_start,8191)
 end
 
+--
+-- Prints useful info to the screen
+--
 function debug_draw()
     left_x = 2
     mid_dist = 28
@@ -336,6 +351,11 @@ function debug_draw()
     end
 end
 
+--
+-- Plays a sound
+-- uses the very hacky feeling control chars
+-- https://www.lexaloffle.com/dl/docs/pico-8_manual.html#Appendix_A
+--
 function play_sound(frog)
     printh("play sound.  effect:"..frog.effect.. "  instrument:"..frog.instrument.."  high: "..frog.high_note.."  low: "..frog.low_note)
     local prc = frog.val / 100
@@ -345,10 +365,6 @@ function play_sound(frog)
     --(v) volume maxes out at 7
     --(i) instruments: 0,1,2,3, 5,7
     --(s) speed  can go up to 9. higher = slower
-        --?"\ace-g"
-        --?"\as9v7x3i0f..d-..f"
-        --?"\as4x5c1eg2egc3egc4"
-        --?"\ab"
 
     --start audio string
     local txt = "\a"
@@ -413,6 +429,7 @@ function generate_placement()
     end
 
     --now have the frogs sort themselves top to bottom
+    --super inefficient sort. don't @ me.
     for i=1,num_frogs do
         local best_id = 1
         for k=1,num_frogs do
