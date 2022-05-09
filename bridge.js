@@ -17,15 +17,25 @@ let gamestate_pin_start = 1
 
 let input_pin = 100
 let id_pin = 101
+let cart_started_pin = 102
+let status_pin = 103
+
+//some statuses
+const STATUS_WAITING = 1
+const STATUS_CONNECTED = 2
+const STATUS_POND_FULL = 3
+const STATUS_DISCONNECT = 4
+let cur_status = STATUS_WAITING
 
 let prev_input_val = 0;     //for detecting change
 
 //talking with backend
 var socket;
 
-//var remote_adress = "ws://ssdj-game.herokuapp.com:80";
+var remote_adress = "wss://pico-pond-backend.herokuapp.com";
+
 //uncomment this line to test locally
-var remote_adress = "ws://localhost:3001";
+//remote_adress = "ws://localhost:3001";
 
 console.log("try to connect to "+remote_adress)
 
@@ -34,6 +44,19 @@ socket = new WebSocket(remote_adress);
 socket.onopen = function(event) {
   console.log("SOCKET OPEN");
 };
+
+socket.onclose = function(event){
+    console.log("that socket is CLOSED")
+    cur_status = STATUS_DISCONNECT
+}
+
+socket.addEventListener('error', function (event) {
+    console.log('WebSocket ErOR: ', event);
+    cur_status = STATUS_DISCONNECT
+});
+// socket.onerror = function(event){
+//     console.log("ERROR TIME BAYBE")
+// }
 
 socket.onmessage = function(event) {
     process_msg(event.data);
@@ -50,32 +73,41 @@ function setup(){
 function update(){
     //check if pico 8 has launched
     if (!pico_started){
-        if (pico8_gpio[0]){
+        if (pico8_gpio[cart_started_pin]){
             pico_started = true
             console.log("pico 8 started!")
-
-            //if we already heard from the backend, set our ID
-            if (pico_8_frog_id != -1){
-                pico8_gpio[id_pin] = pico_8_frog_id;
-            }
         }
-         //boucce out if we're not connected yet
+         //bounce out if we're not connected yet
         else{
             return;
         }
     }
+
+    //set the status
+    pico8_gpio[status_pin] = cur_status;
+
+    //just setting this every frame to make life easier
+    pico8_gpio[id_pin] = pico_8_frog_id;
     
     //console.log("hi "+pico8_gpio[input_pin])
 
     //check if the player has changed input
     let cur_input_val = pico8_gpio[input_pin];
-    if (cur_input_val != prev_input_val){
+    if (cur_input_val != prev_input_val && cur_status == STATUS_CONNECTED){
         console.log("input change: "+cur_input_val)
         let val = {
             type: "input_change",
             val: cur_input_val
         };
-        socket.send(JSON.stringify(val));
+
+        if (socket.readyState === socket.OPEN){
+            socket.send(JSON.stringify(val));
+        }
+        else{
+            //if the socket is closed, we're in trouble
+            cur_status = STATUS_DISCONNECT
+        }
+
 
         prev_input_val = cur_input_val;
     }
@@ -110,11 +142,16 @@ function process_msg(data){
         return;
     }
 
+
     if (msg.type == "connect_confirm"){
         console.log("set it to "+msg.frog_id)
         pico_8_frog_id = msg.frog_id + 1;   //pico8 is 1 indexed
-        //set the pin (this will need to be redone if pico8 has not started yet)
-        pico8_gpio[id_pin] = pico_8_frog_id  
+        cur_status = STATUS_CONNECTED
+    }
+
+    if (msg.type == "pond_full"){
+        console.log("the pond is full")
+        cur_status = STATUS_POND_FULL
     }
 
     if (msg.type == "gamestate"){
