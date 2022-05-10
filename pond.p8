@@ -3,6 +3,8 @@ version 35
 __lua__
 
 --Demake by Andy Wallace
+--andymakes.com
+--@andy_makes
 
 --Frog Chorus by v buckenham & Viviane Schwarz
 --https://frogchorus.com/?pond=the_big_pond
