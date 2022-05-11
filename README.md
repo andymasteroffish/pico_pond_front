@@ -20,7 +20,7 @@ Before I get into the details, here's an overview of how this project connects m
 
 This particular project uses a setup like this: The gpio pins are used to allow my JS and the PICO-8 game to communicate. My frontend JS then communicates to a node server hosted on Heroku using a websocket.
 
-![flow diagram](https://github.com/andymasteroffish/pico_pond_front/tree/main/readme_imgs/frog_diagram.png)
+![flow diagram](https://github.com/andymasteroffish/pico_pond_front/blob/main/reamde_imgs/frog_diagram.png)
 
 ## JS / PICO-8 Communication
 
