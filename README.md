@@ -1,4 +1,6 @@
 # Pico-Pond Frontend
+(You can also find this post on [my blog](https://andymakesgames.tumblr.com/post/683915639566598144/pico-pond-a-networked-pico-8-demake))
+
 This is a networked PICO-8 demake of [Frog Chorus](https://frogchorus.com/?pond=the_big_pond), a web-project I love by [v buckenham](https://v21.io/) and [Viviane Schwarz](https://www.vivianeschwarz.co.uk/).
 
 You can play Pico-Pond for free in your browser here: https://andymakes.itch.io/pico-pond
