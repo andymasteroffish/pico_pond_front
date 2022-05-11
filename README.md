@@ -12,6 +12,8 @@ Please keep in mind that this was a weekend project that was never meant to scal
 
 ## Overview
 
+![screenshot from the game](https://github.com/andymasteroffish/pico_pond_front/blob/main/reamde_imgs/game.jpg?raw=true)
+
 Just like in the original, you control a single frog in a pond populated by other real people. All you can do is hold a button to grow in size and then release it to make a ribbit. The ribbit is louder and longer the bigger your frog is when you release. All credit for this design goes to buckenham and Schwarz. It is deceptively simple, but the act of communicating with strangers this way is surprisingly rich.
 
 What makes Pico-Pond somewhat unusual for PICO-8 is that it is networked! This is not a standard feature of PICO-8, but is possible in a web build through some fairly straightforward hacks. I've been curious about exploring this for a while after reading about some early work in this direction. I selected a Frog Chorus tribute both because I loved the original and because the simplicity of it lent itself to a good first project.
