@@ -114,7 +114,8 @@ The frog pic used in the game is a lightly modified version of an image made by 
 Thanks to [Sean S. LeBlanc](https://twitter.com/seansleblanc) for the breakdown of his [PICO-8 twitter client](https://www.lexaloffle.com/bbs/?tid=3909), which was a key part of getting this off the ground!
 
 Thanks to [lexaloffle](https://twitter.com/lexaloffle) for [PICO-8](https://www.lexaloffle.com/)!
- 
+
+You can support things like this on [my patreon](https://www.patreon.com/andymakes)!
 
 
 
