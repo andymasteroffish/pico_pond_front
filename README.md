@@ -101,7 +101,7 @@ There's a bit more going on, but those are the exciting parts! Please dig into t
 
 I hope this is helpful if you want to add a bit of networking to your own PICO-8 projects!
 
-** Credits and Links **
+## Credits and Links
 
 [Frog Chorus](https://frogchorus.com/?pond=the_big_pond) was made by [v buckenham](https://v21.io/) & [Viviane Schwarz](https://www.vivianeschwarz.co.uk/).
 
