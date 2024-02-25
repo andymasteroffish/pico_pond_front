@@ -1,5 +1,3 @@
-console.log("i am NOT god");
-
 //note: you cannot set gpio pins to a negative value
 
 //general info
